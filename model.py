@@ -1,5 +1,5 @@
-import torch
-from torch import nn
+import torch  # 当前命名空间中创建一个名为 torch 的对象
+from torch import nn   # 创建一个nn的对象，这样就不用torch.nn了
 
 
 class EBD(nn.Module):
@@ -13,10 +13,16 @@ class EBD(nn.Module):
         return self.word_ebd(X) + self.pos_ebd(self.pos_t)
 
 
-def transpose(QKV: torch.Tensor):
+def transpose_qkv(QKV: torch.Tensor):
     QKV = QKV.reshape(QKV.shape[0], QKV.shape[1], 4, 6)
     QKV = QKV.transpose(-2, -3)
     return QKV
+
+
+def transpose_output(O: torch.Tensor):
+    O = O.transpose(-2, -3)
+    O = O.reshape(O.shape[0], O.shape[1], -1)
+    return O
 
 
 def attention(Q, K, V):
@@ -36,10 +42,14 @@ class Attention_Block(nn.Module):
 
     def forward(self, X):
         Q, K, V = self.Wq(X), self.Wk(X), self.Wv(X)
+        Q, K, V = transpose_qkv(Q), transpose_qkv(K), transpose_qkv(V)
+        O = attention(Q, K, V)
+        O = transpose_output(O)
+        return O
 
 
 if __name__ == "__main__":
-    a = torch.ones((2, 12)).long()
+    a = torch.ones((2, 12))
     ebd = EBD()
     b = ebd(a)
     print(b.shape)
